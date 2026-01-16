@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Football Predictions Admin</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial; margin: 30px; }
+        input, textarea, select { width: 300px; padding: 5px; margin: 5px 0; }
+        button { padding: 8px 16px; margin-top: 10px; }
+        table { border-collapse: collapse; margin-top: 30px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+    <h1>Добавить прогноз</h1>
+    <form method="post" action="/add">
+        <input name="league" placeholder="Лига" required><br>
+        <input name="home_team" placeholder="Хозяева" required><br>
+        <input name="away_term" placeholder="Гости" required><br>
+        <input name="match_datetime" type="datetime-local" required><br>
+        <input name="prediction_type" placeholder="Тип (1X, BTTS и т.д.)" required><br>
+        <input name="confidence" type="number" step="0.01" min="0" max="1" placeholder="Уверенность (0.7–1.0)" required><br>
+        <textarea name="reasoning" placeholder="Обоснование"></textarea><br>
+        <button type="submit">Добавить</button>
+    </form>
+
+    <h2>Существующие прогнозы</h2>
+    <table>
+        <tr><th>Лига</th><th>Матч</th><th>Время</th><th>Прогноз</th><th>Уверенность</th></tr>
+        {% for p in predictions %}
+        <tr>
+            <td>{{ p[1] }}</td>
+            <td>{{ p[2] }} – {{ p[3] }}</td>
+            <td>{{ p[4] }}</td>
+            <td>{{ p[5] }}</td>
+            <td>{{ "%.0f%%"|format(p[6]*100) }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

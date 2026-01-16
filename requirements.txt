@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlite3
+python-multipart
+jinja2
+aiofiles
+aiogram
+httpx
