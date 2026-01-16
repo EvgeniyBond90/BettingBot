@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: football-admin
+    runtime: python
+    region: frankfurt
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        value: /var/data/predictions.db
+    disk:
+      name: data_disk
+      mountPath: /var/data
+      sizeGB: 1
+
+  - type: worker
+    name: football-bot
+    runtime: python
+    region: frankfurt
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python bot/bot.py"
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: YOUR_TELEGRAM_USER_ID
+        sync: false
+      - key: PREDICTIONS_API_URL
+        value: https://football-admin.onrender.com/api/predictions
