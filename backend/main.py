@@ -5,71 +5,100 @@ from fastapi.templating import Jinja2Templates
 import sqlite3
 import os
 from datetime import datetime, timedelta
-from database import init_db
-from models import PredictionCreate
 
 app = FastAPI()
-init_db()
 
-# Подключаем шаблоны и статику
 templates = Jinja2Templates(directory="backend/static")
 app.mount("/static", StaticFiles(directory="backend/static"), name="static")
 
 DB_PATH = os.getenv("DATABASE_URL", "predictions.db")
 
-@app.get("/", response_class=HTMLResponse)
-async def admin_panel(request: Request):
+def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS predictions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            league TEXT NOT NULL,
+            home_team TEXT NOT NULL,
+            away_team TEXT NOT NULL,
+            match_datetime TEXT NOT NULL,
+            prediction_type TEXT NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.get("/", response_class=HTMLResponse)
+async def admin_panel(request: Request):
+    db = get_db()
+    cur = db.cursor()
     cur.execute("SELECT * FROM predictions ORDER BY match_datetime DESC")
     predictions = cur.fetchall()
-    conn.close()
+    db.close()
+    predictions = [dict(row) for row in predictions]
     return templates.TemplateResponse("index.html", {"request": request, "predictions": predictions})
 
 @app.post("/add")
 async def add_prediction(
     league: str = Form(...),
     home_team: str = Form(...),
-    away_term: str = Form(...),
+    away_team: str = Form(...),
     match_datetime: str = Form(...),
     prediction_type: str = Form(...),
-    confidence: float = Form(...),
-    reasoning: str = Form(None),
 ):
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
+    db = get_db()
+    cur = db.cursor()
+    dt_iso = f"{match_datetime}:00"
     cur.execute("""
-        INSERT INTO predictions 
-        (league, home_team, away_team, match_datetime, prediction_type, confidence, reasoning)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (league, home_team, away_term, match_datetime, prediction_type, confidence, reasoning))
-    conn.commit()
-    conn.close()
+        INSERT INTO predictions
+        (league, home_team, away_team, match_datetime, prediction_type)
+        VALUES (?, ?, ?, ?, ?)
+    """, (league, home_team, away_team, dt_iso, prediction_type))
+    db.commit()
+    db.close()
+    return RedirectResponse(url="/", status_code=303)
+
+@app.post("/delete/{prediction_id}")
+async def delete_prediction(prediction_id: int):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("DELETE FROM predictions WHERE id = ?", (prediction_id,))
+    db.commit()
+    db.close()
     return RedirectResponse(url="/", status_code=303)
 
 @app.get("/api/predictions")
 async def get_active_predictions():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
+    db = get_db()
+    cur = db.cursor()
     now = datetime.utcnow().isoformat()
-    tomorrow = (datetime.utcnow() + timedelta(days=2)).isoformat()
+    future = (datetime.utcnow() + timedelta(days=2)).isoformat()
     cur.execute("""
-        SELECT league, home_team, away_team, match_datetime, prediction_type, confidence, reasoning
+        SELECT league, home_team, away_team, match_datetime, prediction_type
         FROM predictions
         WHERE is_active = 1 AND match_datetime BETWEEN ? AND ?
         ORDER BY match_datetime
-    """, (now, tomorrow))
+    """, (now, future))
     rows = cur.fetchall()
-    conn.close()
-    return [
+    db.close()
+    result = [
         {
-            "league": r[0],
-            "home_team": r[1],
-            "away_team": r[2],
-            "match_datetime": r[3],
-            "prediction_type": r[4],
-            "confidence": r[5],
-            "reasoning": r[6],
+            "league": r["league"],
+            "home_team": r["home_team"],
+            "away_team": r["away_team"],
+            "match_datetime": r["match_datetime"],
+            "prediction_type": r["prediction_type"],
         }
         for r in rows
     ]
+    return result
