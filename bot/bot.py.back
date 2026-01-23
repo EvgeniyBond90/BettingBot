@@ -1,0 +1,79 @@
+import os
+import asyncio
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message
+from aiogram.filters import Command
+import httpx
+from datetime import datetime
+from aiogram.exceptions import TelegramRetryAfter
+
+# Получаем токен и ID из переменных окружения
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+YOUR_USER_ID = int(os.getenv("YOUR_TELEGRAM_USER_ID"))
+
+# URL к API админки (замените на ваш домен)
+API_URL = os.getenv("PREDICTIONS_API_URL", "https://194.32.248.172/api/predictions")
+
+# Логин и пароль для HTTP Basic Auth
+API_USERNAME = os.getenv("API_USERNAME", "admin")
+API_PASSWORD = os.getenv("API_PASSWORD", "password")
+
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
+
+@dp.message(Command("start"))
+async def start_command(message: Message):
+    if message.from_user.id != YOUR_USER_ID:
+        await message.reply("Доступ запрещён.")
+        return
+    await message.reply("Привет! Используй /predictions для получения прогнозов.")
+
+@dp.message(Command("predictions"))
+async def send_predictions(message: Message):
+    if message.from_user.id != YOUR_USER_ID:
+        await message.reply("Доступ запрещён.")
+        return
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0, verify=False) as client:
+            response = await client.get(API_URL, auth=(API_USERNAME, API_PASSWORD))
+
+        if response.status_code != 200:
+            await message.reply(f"Ошибка: API вернул статус {response.status_code}")
+            return
+
+        data = response.json()
+
+        if not data:
+            await message.reply("Нет активных прогнозов.")
+            return
+
+        text = "⚽ Прогнозы:\n\n"
+        for item in data:
+            dt_str = item['match_datetime']
+            dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+            text += (
+                f"📅 {dt.strftime('%d.%m %H:%M')}\n"
+                f"🏆 {item['league']}\n"
+                f"{item['home_team']} – {item['away_team']}\n"
+                f"🔮 {item['prediction_type']}\n\n"
+            )
+
+        await message.reply(text.strip())
+
+    except TelegramRetryAfter as e:
+        # Обработка лимита отправки
+        await asyncio.sleep(e.retry_after)
+        try:
+            await message.reply("Повторная отправка...")
+            await message.reply(text.strip())
+        except:
+            await message.reply("Не удалось отправить — лимит превышен.")
+    except Exception as e:
+        await message.reply(f"Ошибка при получении прогнозов: {str(e)}")
+
+async def main():
+    await dp.start_polling(bot)
+
+if __name__ == '__main__':
+    asyncio.run(main())

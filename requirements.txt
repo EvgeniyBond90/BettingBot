@@ -1,6 +1,6 @@
+python-multipart
 fastapi
 uvicorn
-sqlite3
 python-multipart
 jinja2
 aiofiles

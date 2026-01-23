@@ -218,9 +218,6 @@
         </tbody>
     </table>
 
-    <!-- ✅ Новая кнопка "Удалить все прогнозы" -->
-    <button onclick="deleteAllPredictions()">🗑 Удалить все прогнозы</button>
-
     <script>
         const leagueInput = document.getElementById('leagueInput');
         const leagueList = document.getElementById('leagueList');
@@ -285,6 +282,71 @@
             "Лига конференций УЕФА": "Европа - Лига конференций УЕФА"
         };
 
+        // Обновляем списки команд при выборе лиги
+        function updateTeamLists(league) {
+            const teams = teamsByLeague[league] || [];
+            const homeOptions = teams.map(team => `<option value="${team}">${team}</option>`).join('');
+            const awayOptions = teams.map(team => `<option value="${team}">${team}</option>`).join('');
+
+            homeSelect.innerHTML = '<option value="">— Выберите хозяев —</option>' + homeOptions;
+            awaySelect.innerHTML = '<option value="">— Выберите гостей —</option>' + awayOptions;
+        }
+
+        // Выбираем лигу при клике
+        leagueList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('league-option')) {
+                const value = e.target.getAttribute('data-value');
+                const text = e.target.textContent;
+
+                leagueInput.value = text;
+                leagueValue.value = value;
+                leagueList.style.display = 'none';
+
+                // Обновляем списки команд
+                updateTeamLists(value);
+            }
+        });
+
+        // Показываем список при фокусе
+        leagueInput.addEventListener('focus', () => {
+            leagueList.style.display = 'block';
+        });
+
+        // Фильтруем лиги по вводу
+        leagueInput.addEventListener('input', () => {
+            const filter = leagueInput.value.toLowerCase();
+            const options = leagueList.querySelectorAll('.league-option');
+
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                if (text.includes(filter)) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+
+            leagueList.style.display = 'block';
+        });
+
+        // Скрываем список при потере фокуса
+        leagueInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                leagueList.style.display = 'none';
+            }, 200);
+        });
+
+        // Заменяем короткие названия лиг на полные в таблице
+        document.addEventListener('DOMContentLoaded', () => {
+            const leagueCells = document.querySelectorAll('tbody tr td:first-child');
+            leagueCells.forEach(cell => {
+                const shortName = cell.textContent.trim();
+                if (leagueMap[shortName]) {
+                    cell.textContent = leagueMap[shortName];
+                }
+            });
+        });
+
         // Команды по лигам
         const teamsByLeague = {
             "АПЛ": [
@@ -309,7 +371,7 @@
                 "Пиза", "Салерно", "Кремонезе", "Ареццо", "Монца", "Беневенто", "Палермо", "Фрозиноне", "Верона", "Лечче", "Кьево", "Сиена", "Тернана", "Перуджа", "Виртус Ланчано", "Сампдория", "Эмполи", "Брешья", "Тренто", "Алессандрия"
             ],
             "Серия С - группа C": [
-                "Катанция", "Мессина", "Таранто", "Реджина", "Катанцаро", "Козенца", "Катания", "Монца", "Фрозиноне", "Пиза", "Салерно", "Кремонезе", "Ареццо", "Беневенто", "Палермо", "Верона", "Лечче", "Кьево", "Сиена", "Тернана"
+                "Катанция", "Мессина", "Таранто", "Реджина", "Катанцаро", "Козенца", "Катания", "Монца", "Фрозиноне", "Пиза", "Салерно", "Кремонезе", "Ареццо", "Беневенто", "Палермо", "Верона", "Лечče", "Кьево", "Сиена", "Тернана"
             ],
             "Бундеслига": [
                 "Бавария", "Боруссия Д", "РБ Лейпциг", "Боруссия М", "Вольфсбург", "Аугсбург", "Фрайбург", "Майнц", "Штутгарт", "Унион Берлин", "Хоффенхайм", "Кёльн", "Мёнхенгладбах", "Айнтрахт", "Вердер", "Герта", "Шальке", "Нюрнберг", "Ганновер", "Штутгарт II"
@@ -324,7 +386,7 @@
                 "Труа", "Ред Стар 93", "Сент-Этьен", "Дюнкерк", "Реймс", "Ле Ман", "Генгам", "По", "Анси", "Монпелье", "Родез", "Клермон", "Гренобль", "Нанси", "Булонь", "Амьен", "Лаваль", "Бастия"
             ],
             "Эредивизи": [
-                "ПСВ", "Фейеноорд", "Аякс", "Неймеген", "Гронингем", "Твенте", "АЗ Алкмар", "Спарта Роттердам", "Херенвен", "Утрехт", "Зволле", "Фортуна Ситтард", "Го Ахед Иглс", "Эксельсиор", "ФК Волендам", "Телстар", "Рода", "Хераклес"
+                "ПСВ", "Фейеноорд", "Аякс", "Неймеген", "Гронingen", "Твенте", "АЗ", "Сparta Rotterdam", "Херенвен", "Утрехт", "Зволле", "Fortuna Sittard", "Go Ahead Eagles", "Excelsior", "Volendam", "Telstar", "Roda", "Heracles"
             ],
             "Примейра Лига": [
                 "Бенфика", "Порту", "Спортинг", "Брага", "Витория Г", "Фамаликан", "Пасуш де Феррейра", "Маритиму", "Белененсес", "Арука", "Фейренсе", "Тондела", "Морейренсе", "Гил Висенте", "Пеняфьель", "Академика", "Оливренсе", "Лейрия", "Трофенсе", "Визела"
@@ -447,97 +509,6 @@
                 "Фиорентина", "Базель", "Рейнджерс", "Мальмё", "Лацио", "Марсель", "Фейеноорд", "Аякс", "ПСВ", "Атлетико", "Вильярреал", "Байер", "Шахтёр", "Зенит", "Динамо", "Ред Стар", "Бенфика", "Порту", "Реал Мадрид", "Барселона"
             ]
         };
-
-        // Обновляем списки команд при выборе лиги
-        function updateTeamLists(league) {
-            const teams = teamsByLeague[league] || [];
-            const homeOptions = teams.map(team => `<option value="${team}">${team}</option>`).join('');
-            const awayOptions = teams.map(team => `<option value="${team}">${team}</option>`).join('');
-
-            homeSelect.innerHTML = '<option value="">— Выберите хозяев —</option>' + homeOptions;
-            awaySelect.innerHTML = '<option value="">— Выберите гостей —</option>' + awayOptions;
-        }
-
-        // Выбираем лигу при клике
-        leagueList.addEventListener('click', (e) => {
-            if (e.target.classList.contains('league-option')) {
-                const value = e.target.getAttribute('data-value');
-                const text = e.target.textContent;
-
-                leagueInput.value = text;
-                leagueValue.value = value;
-                leagueList.style.display = 'none';
-
-                // Обновляем списки команд
-                updateTeamLists(value);
-            }
-        });
-
-        // Показываем список при фокусе
-        leagueInput.addEventListener('focus', () => {
-            leagueList.style.display = 'block';
-        });
-
-        // Фильтруем лиги по вводу
-        leagueInput.addEventListener('input', () => {
-            const filter = leagueInput.value.toLowerCase();
-            const options = leagueList.querySelectorAll('.league-option');
-
-            options.forEach(option => {
-                const text = option.textContent.toLowerCase();
-                if (text.includes(filter)) {
-                    option.style.display = 'block';
-                } else {
-                    option.style.display = 'none';
-                }
-            });
-
-            leagueList.style.display = 'block';
-        });
-
-        // Скрываем список при потере фокуса
-        leagueInput.addEventListener('blur', () => {
-            setTimeout(() => {
-                leagueList.style.display = 'none';
-            }, 200);
-        });
-
-        // Функция удаления всех прогнозов
-        async function deleteAllPredictions() {
-            if (!confirm('Вы уверены, что хотите удалить ВСЕ прогнозы? Это действие нельзя отменить.')) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/delete_all', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                if (response.ok) {
-                    alert('Все прогнозы успешно удалены.');
-                    location.reload(); // Перезагружаем страницу
-                } else {
-                    alert('Ошибка при удалении прогнозов. Проверьте консоль.');
-                }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                alert('Произошла ошибка. Проверьте консоль.');
-            }
-        }
-
-        // Заменяем короткие названия лиг на полные в таблице
-        document.addEventListener('DOMContentLoaded', () => {
-            const leagueCells = document.querySelectorAll('tbody tr td:first-child');
-            leagueCells.forEach(cell => {
-                const shortName = cell.textContent.trim();
-                if (leagueMap[shortName]) {
-                    cell.textContent = leagueMap[shortName];
-                }
-            });
-        });
     </script>
 </body>
 </html>
