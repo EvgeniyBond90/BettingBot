@@ -114,7 +114,7 @@ async def send_predictions(message: Message):
             league_full = LEAGUE_FULL_NAMES.get(item['league'], item['league'])
 
             text += (
-                f"📅 {dt.strftime('%d.%m %H:%M')}\n"
+                f"🕐 {dt.strftime('%d.%m %H:%M')}\n"
                 f"🏆 {league_full}\n"
                 f"⚽ {item['home_team']} – {item['away_team']}\n"
                 f"🔮 {item['prediction_type']}\n\n"
